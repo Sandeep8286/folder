@@ -1,0 +1,65 @@
+Step 1: Install Docker on Ubuntu
+sudo apt-get install curl
+
+curl -fSSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add –
+
+sudo add-apt-repository \
+"deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+$(lsb_release -cs) \
+stable"
+
+sudo apt-get update
+
+apt-cache policy docker-ce
+
+sudo apt-get install -y docker-ce
+
+
+Step 2: Create a docker network
+sudo docker network create udit-iroha-network
+
+
+Step 3: Add PostgreSQL to the created docker network.
+sudo docker run --name some-postgres \
+-e POSTGRES_USER=postgres \
+-e POSTGRES_PASSWORD=mysecretpassword \
+-p 5432:5432 \
+--network=udit-iroha-network \
+-d postgres:9.5
+
+
+Step 4: Create a volume of persistant storage named "blockstore" to store the blocks on blockchain.
+sudo docker volume create blockstore
+
+
+Step 5: Configure Iroha on the network. Download the Iroha code from github and install git.
+sudo apt-get install git
+
+
+git clone -b develop https://github.com/hyperledger/iroha --depth=1
+
+
+Step 6: Run the Iroha docker container.
+sudo docker run -it --name iroha \
+-p 50051:50051 \
+-v $(pwd)/iroha/example:/opt/iroha_data \
+-v blockstore:/tmp/block_store \
+--network=udit-iroha-network \
+--entrypoint=/bin/bash \
+hyperledger/iroha:latest
+
+
+
+Step 7: Run Iroha.
+irohad --config config.docker \
+--genesis_block genesis.block \
+--keypair_name node0
+
+
+
+Step 8: Open new terminal and attach the docker container to our terminal.
+sudo docker exec -it iroha /bin/bash
+
+
+Step 9: Launch the iroha-cli tool and login as admin@test.
+iroha-cli -account_name admin@test
